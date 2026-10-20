@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nostea OS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* Layout: Bento tiles on a calm grey ground. Lock screen slides up over the home screen; apps open as full panels. */
+:root{
+  --bg:#ECEEF2; --ink:#111318; --paper:#FFFFFF; --muted:#454B58; --line:#D3D7DF;
+  --yellow:#FFD23F; --mint:#A8F0C6; --coral:#FF7A59; --blue:#2540FF; --accent:#2540FF;
+  --tile-dark:#111318; --on-dark:#FFFFFF; --onc:#111318;
+  --font:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D0F14; --ink:#F2F4F8; --paper:#1A1D25; --muted:#B7BDCA; --line:#2C303B;
+    --tile-dark:#272B36; --on-dark:#FFFFFF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D0F14; --ink:#F2F4F8; --paper:#1A1D25; --muted:#B7BDCA; --line:#2C303B;
+  --tile-dark:#272B36; --on-dark:#FFFFFF; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}
+button,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer;border:0;padding:0;background:none}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ic{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic.lg{width:44px;height:44px;stroke-width:1.7}
+#phone{position:relative;height:100%;max-width:520px;margin:0 auto;overflow:hidden;background:var(--bg)}
+.screen,.panel{position:absolute;inset:0;display:flex;flex-direction:column;padding:max(20px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(18px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+
+/* lock */
+#lock{z-index:5;background:var(--bg);touch-action:none;transition:transform .35s cubic-bezier(.2,.8,.2,1);user-select:none}
+#lock.gone{transform:translateY(-105%)}
+.bigclock{margin-top:22px;display:flex;flex-direction:column;line-height:.86;font-weight:700;letter-spacing:-.06em;font-size:min(40vw,19vh);font-variant-numeric:tabular-nums}
+.bigclock span:last-child{color:var(--accent)}
+.lockgrid{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:2px}
+.card.y{background:var(--yellow);color:var(--onc)}
+.card.d{background:var(--tile-dark);color:var(--on-dark);justify-content:space-between;gap:10px}
+.card.m{background:var(--mint);color:var(--onc);flex-direction:row;align-items:center;gap:12px;margin-top:10px}
+.card .big{font-size:28px;font-weight:700;letter-spacing:-.03em}
+.lockfoot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rbtn{width:56px;height:56px;border-radius:20px;background:var(--tile-dark);color:var(--on-dark);display:flex;align-items:center;justify-content:center}
+.hint{font-size:14px;color:var(--muted);font-weight:500;padding:12px 8px}
+
+/* home */
+#home{background:var(--bg)}
+.search{margin-top:14px;height:56px;border-radius:28px;background:var(--tile-dark);color:var(--on-dark);display:flex;align-items:center;gap:10px;padding:0 20px}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;font-size:16px;color:var(--on-dark)}
+.search input::placeholder{color:#C3C8D4;opacity:1}
+.search:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.bento{margin-top:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(74px,10.5vh);gap:10px}
+.tile{border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:500;background:var(--paper);color:var(--ink);min-width:0}
+.tile.yt{grid-column:span 2;grid-row:span 2;border-radius:30px;background:var(--accent);color:#fff;align-items:flex-start;justify-content:space-between;padding:18px;text-align:left;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.tile.clk{grid-column:span 2;border-radius:30px;background:var(--yellow);color:var(--onc);align-items:flex-start;justify-content:center;padding:14px 18px;gap:0;cursor:default}
+.tile.clk b{font-size:34px;letter-spacing:-.06em;line-height:1;font-variant-numeric:tabular-nums}
+.tile.br{grid-column:span 2;border-radius:30px;background:var(--mint);color:var(--onc);flex-direction:row;justify-content:flex-start;padding:0 18px;gap:10px;font-size:17px;font-weight:700}
+.tile.dk{background:var(--tile-dark);color:var(--on-dark)}
+.tile.co{background:var(--coral);color:var(--onc)}
+.dock{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:10px;border-radius:34px;background:var(--tile-dark)}
+.dock button{height:64px;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--onc)}
+.dock .a{background:var(--mint)}.dock .b{background:var(--yellow)}.dock .c{background:var(--paper);color:var(--ink)}.dock .d{background:var(--accent);color:#fff}
+
+/* app panels */
+.panel{z-index:3;background:var(--bg);padding-top:max(12px,env(safe-area-inset-top,0px));transform:translateY(100%);visibility:hidden;transition:transform .3s cubic-bezier(.2,.8,.2,1),visibility 0s .3s}
+.panel.on{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.phead{display:flex;align-items:center;gap:8px;height:56px;flex:none}
+.phead h1{margin:0;font-size:22px;letter-spacing:-.02em;flex:1}
+.back{height:44px;min-width:44px;border-radius:16px;background:var(--paper);display:flex;align-items:center;justify-content:center;gap:4px;padding:0 12px;font-size:14px;font-weight:500}
+.pbody{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+.chip{border-radius:22px;background:var(--paper);padding:14px 16px;text-align:left;display:flex;flex-direction:column;gap:2px;width:100%}
+.chip small{color:var(--muted);font-size:13px}
+.pill{height:48px;border-radius:24px;padding:0 20px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pill.alt{background:var(--paper);color:var(--ink)}
+textarea{width:100%;flex:1;min-height:200px;border-radius:22px;border:0;background:var(--paper);padding:16px;font-size:17px;line-height:1.45;resize:none}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.grid4 .tile{height:86px}
+.sub{font-size:13px;color:var(--muted);font-weight:500;margin:6px 4px 0;letter-spacing:.04em;text-transform:uppercase}
+
+/* calculator */
+.calc{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+.cdisp{border-radius:26px;background:var(--tile-dark);color:var(--on-dark);padding:20px;font-size:52px;font-weight:700;letter-spacing:-.04em;text-align:right;overflow:hidden;white-space:nowrap;font-variant-numeric:tabular-nums;min-height:110px;display:flex;align-items:flex-end;justify-content:flex-end}
+.keys{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:10px;min-height:0}
+.keys button{border-radius:22px;background:var(--paper);font-size:24px;font-weight:500;min-height:52px}
+.keys .op{background:var(--yellow);color:var(--onc);font-weight:700}
+.keys .eq{background:var(--accent);color:#fff;font-weight:700}
+.keys .fn{background:var(--mint);color:var(--onc)}
+
+/* clock */
+.bigt{font-size:min(22vw,92px);font-weight:700;letter-spacing:-.05em;font-variant-numeric:tabular-nums;line-height:1}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{height:44px;padding:0 16px;border-radius:22px;background:var(--paper);font-size:14px;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:700}
+.sw{width:44px;height:44px;border-radius:22px;border:3px solid transparent}
+.sw[aria-pressed="true"]{border-color:var(--ink)}
+
+#toast{position:absolute;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);max-width:86%;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:9;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 00-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-5 4 4 3-3 4 4"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0"/><circle cx="12" cy="19" r=".8"/></symbol>
+<symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</defs></svg>
+
+<div id="phone">
+
+<!-- HOME -->
+<section id="home" class="screen" aria-label="Home screen">
+  <form class="search" id="searchForm" role="search">
+    <svg class="ic" style="width:20px;height:20px"><use href="#i-search"/></svg>
+    <input id="q" type="search" placeholder="Search or type a URL" aria-label="Search the web or type a URL" autocomplete="off" autocapitalize="none" enterkeyhint="go">
+  </form>
+  <div class="bento">
+    <button class="tile yt" data-do="url" data-url="https://m.youtube.com/" aria-label="YouTube"><svg class="ic lg"><use href="#i-play"/></svg><span>YouTube</span></button>
+    <div class="tile clk"><b id="hClock">10:23</b><span id="hDate">Tue, 20 Oct</span></div>
+    <button class="tile br" data-do="url" data-url="https://duckduckgo.com/" aria-label="Browser"><svg class="ic" style="width:30px;height:30px"><use href="#i-globe"/></svg><span>Browser</span></button>
+    <button class="tile" data-do="native" data-kind="maps" aria-label="Maps"><svg class="ic"><use href="#i-pin"/></svg>Maps</button>
+    <button class="tile" data-do="native" data-kind="gallery" aria-label="Gallery"><svg class="ic"><use href="#i-image"/></svg>Gallery</button>
+    <button class="tile" data-do="native" data-kind="music" aria-label="Music"><svg class="ic"><use href="#i-music"/></svg>Music</button>
+    <button class="tile" data-do="app" data-app="calc" aria-label="Calculator"><svg class="ic"><use href="#i-calc"/></svg>Calc</button>
+    <button class="tile" data-do="app" data-app="notes" aria-label="Notes"><svg class="ic"><use href="#i-note"/></svg>Notes</button>
+    <button class="tile" data-do="native" data-kind="calendar" aria-label="Calendar"><svg class="ic"><use href="#i-cal"/></svg>Calendar</button>
+    <button class="tile dk" data-do="app" data-app="settings" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg>Settings</button>
+    <button class="tile co" data-do="app" data-app="clock" aria-label="Clock"><svg class="ic"><use href="#i-clock"/></svg>Clock</button>
+  </div>
+  <nav class="dock" aria-label="Dock">
+    <button class="a" data-do="native" data-kind="phone" aria-label="Phone"><svg class="ic"><use href="#i-phone"/></svg></button>
+    <button class="b" data-do="native" data-kind="sms" aria-label="Messages"><svg class="ic"><use href="#i-msg"/></svg></button>
+    <button class="c" data-do="app" data-app="drawer" aria-label="All apps"><svg class="ic"><use href="#i-grid"/></svg></button>
+    <button class="d" data-do="native" data-kind="camera" aria-label="Camera"><svg class="ic"><use href="#i-cam"/></svg></button>
+  </nav>
+</section>
+
+<!-- LOCK -->
+<section id="lock" class="screen" aria-label="Lock screen">
+  <div class="bigclock" aria-label="Time"><span id="lH">10</span><span id="lM">23</span></div>
+  <div class="lockgrid">
+    <div class="card y"><span style="font-size:13px;font-weight:500" id="lDay">Tuesday</span><span class="big" id="lDate">20 Oct</span></div>
+    <div class="card d"><svg class="ic"><use href="#i-wifi"/></svg><span style="font-size:14px;font-weight:500" data-net>Online</span></div>
+  </div>
+  <div class="card m"><span style="width:40px;height:40px;border-radius:14px;background:#111318;color:#A8F0C6;display:flex;align-items:center;justify-content:center;flex:none"><svg class="ic" style="width:22px;height:22px"><use href="#i-msg"/></svg></span><span style="font-weight:500;font-size:14px">Welcome to Nostea OS. Swipe up to start.</span></div>
+  <div class="lockfoot">
+    <button class="rbtn" data-do="native" data-kind="phone" aria-label="Phone"><svg class="ic"><use href="#i-phone"/></svg></button>
+    <button class="hint" data-do="unlock">Swipe up to unlock</button>
+    <button class="rbtn" data-do="native" data-kind="camera" aria-label="Camera"><svg class="ic"><use href="#i-cam"/></svg></button>
+  </div>
+</section>
+
+<!-- APP: drawer -->
+<section class="panel" id="p-drawer" aria-label="All apps">
+  <div class="phead"><button class="back" data-do="close" aria-label="Back to home"><svg class="ic" style="width:20px;height:20px"><use href="#i-back"/></svg>Home</button><h1>All apps</h1></div>
+  <div class="pbody"><div class="sub">Nostea</div><div class="grid4" id="builtin"></div><div class="sub" id="instSub" hidden>Installed</div><div class="grid4" id="installed"></div></div>
+</section>
+
+<!-- APP: notes -->
+<section class="panel" id="p-notes" aria-label="Notes">
+  <div class="phead"><button class="back" data-do="close" aria-label="Back to home"><svg class="ic" style="width:20px;height:20px"><use href="#i-back"/></svg>Home</button><h1>Notes</h1><button class="pill" id="newNote"><svg class="ic" style="width:18px;height:18px"><use href="#i-plus"/></svg>New</button></div>
+  <div class="pbody" id="noteList"></div>
+  <div class="pbody" id="noteEdit" hidden>
+    <textarea id="noteText" aria-label="Note text" placeholder="Write something"></textarea>
+    <div class="row"><button class="pill alt" id="noteBack">All notes</button><button class="pill alt" id="noteDel">Delete</button></div>
+  </div>
+</section>
+
+<!-- APP: calculator -->
+<section class="panel" id="p-calc" aria-label="Calculator">
+  <div class="phead"><button class="back" data-do="close" aria-label="Back to home"><svg class="ic" style="width:20px;height:20px"><use href="#i-back"/></svg>Home</button><h1>Calculator</h1></div>
+  <div class="calc"><div class="cdisp" id="cd" role="status" aria-live="polite">0</div>
+    <div class="keys" id="keys">
+      <button class="fn" data-k="C">C</button><button class="fn" data-k="±" aria-label="Plus minus">±</button><button class="fn" data-k="%" aria-label="Percent">%</button><button class="op" data-k="÷" aria-label="Divide">÷</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="op" data-k="×" aria-label="Multiply">×</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="op" data-k="−" aria-label="Subtract">−</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="op" data-k="+" aria-label="Add">+</button>
+      <button data-k="0" style="grid-column:span 2">0</button><button data-k=".">.</button><button class="eq" data-k="=" aria-label="Equals">=</button>
+    </div></div>
+</section>
+
+<!-- APP: clock -->
+<section class="panel" id="p-clock" aria-label="Clock">
+  <div class="phead"><button class="back" data-do="close" aria-label="Back to home"><svg class="ic" style="width:20px;height:20px"><use href="#i-back"/></svg>Home</button><h1>Clock</h1></div>
+  <div class="pbody">
+    <div class="chip"><small>Now</small><div class="bigt" id="cClock">10:23</div></div>
+    <div class="chip"><small>Stopwatch</small><div class="bigt" id="swOut">00:00.0</div><div class="row" style="margin-top:8px"><button class="pill" id="swGo">Start</button><button class="pill alt" id="swReset">Reset</button></div></div>
+    <div class="chip"><small>Timer (minutes)</small><div class="bigt" id="tmOut">05:00</div><div class="row" style="margin-top:8px"><button class="pill alt" id="tmMinus" aria-label="One minute less">-1</button><button class="pill alt" id="tmPlus" aria-label="One minute more">+1</button><button class="pill" id="tmGo">Start</button></div></div>
+  </div>
+</section>
+
+<!-- APP: settings -->
+<section class="panel" id="p-settings" aria-label="Settings">
+  <div class="phead"><button class="back" data-do="close" aria-label="Back to home"><svg class="ic" style="width:20px;height:20px"><use href="#i-back"/></svg>Home</button><h1>Settings</h1></div>
+  <div class="pbody">
+    <div class="chip"><small>Network</small><b data-net>Online</b>
+      <div class="row" style="margin-top:8px"><button class="pill alt" data-do="native" data-kind="wifi">Wi-Fi settings</button></div></div>
+    <div class="chip"><small>Theme</small><div class="seg" id="segTheme">
+      <button data-theme-set="system" aria-pressed="false">System</button><button data-theme-set="light" aria-pressed="false">Light</button><button data-theme-set="dark" aria-pressed="false">Dark</button></div></div>
+    <div class="chip"><small>Accent colour</small><div class="seg" id="segAcc">
+      <button class="sw" data-acc="blue" style="background:#2540FF" aria-label="Blue" aria-pressed="false"></button>
+      <button class="sw" data-acc="coral" style="background:#C8371A" aria-label="Red" aria-pressed="false"></button>
+      <button class="sw" data-acc="green" style="background:#0B7A47" aria-label="Green" aria-pressed="false"></button>
+      <button class="sw" data-acc="violet" style="background:#6B2FD9" aria-label="Violet" aria-pressed="false"></button></div></div>
+    <div class="chip"><small>Clock format</small><div class="seg" id="segFmt">
+      <button data-fmt="24" aria-pressed="false">24-hour</button><button data-fmt="12" aria-pressed="false">12-hour</button></div></div>
+    <div class="chip"><small>Home app</small><span style="font-size:14px">Make Nostea your home screen on this phone.</span>
+      <div class="row" style="margin-top:8px"><button class="pill alt" data-do="native" data-kind="homesettings">Choose home app</button><button class="pill alt" data-do="lockNow">Lock now</button></div></div>
+    <div class="chip"><small>About</small><span style="font-size:14px">Nostea OS 0.1 · Bento launcher</span></div>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var N = window.NosteaNative || null;
+var $ = function(s,r){return (r||document).querySelector(s)};
+var $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var ACC = {blue:'#2540FF',coral:'#C8371A',green:'#0B7A47',violet:'#6B2FD9'};
+var settings = {theme:'system',accent:'blue',h24:true};
+try{ Object.assign(settings, JSON.parse(localStorage.getItem('nostea.settings')||'{}')); }catch(e){}
+function saveSettings(){ try{localStorage.setItem('nostea.settings',JSON.stringify(settings));}catch(e){} }
+function pad(n){return (n<10?'0':'')+n}
+
+/* theme + settings ui */
+function applyTheme(){
+  var r=document.documentElement;
+  if(settings.theme==='system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',settings.theme);
+  r.style.setProperty('--accent', ACC[settings.accent]||ACC.blue);
+  $$('[data-theme-set]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.themeSet===settings.theme))});
+  $$('[data-acc]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.acc===settings.accent))});
+  $$('[data-fmt]').forEach(function(b){b.setAttribute('aria-pressed',String((b.dataset.fmt==='24')===settings.h24))});
+}
+
+/* toast + links */
+window.nosteaToast=function(m){toast(m)};
+var tt; function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},2600)}
+function link(u){var a=document.createElement('a');a.href=u;if(/^https?:/.test(u)){a.target='_blank';a.rel='noopener noreferrer'}document.body.appendChild(a);a.click();a.remove()}
+function openUrl(u){ if(N){try{N.openUrl(u);return}catch(e){}} link(u); }
+function norm(q){ q=(q||'').trim(); if(!q) return 'https://duckduckgo.com/';
+  if(/^https?:\/\//i.test(q)) return q;
+  if(/^[^\s]+\.[a-z]{2,}([\/?#].*)?$/i.test(q)) return 'https://'+q;
+  return 'https://duckduckgo.com/?q='+encodeURIComponent(q); }
+function native(kind){ var ok=false;
+  if(N){ try{ok=N.intent(kind)}catch(e){} }
+  else { var fb={phone:'tel:',sms:'sms:',maps:'https://www.google.com/maps'}[kind]; if(fb){link(fb);ok=true} }
+  if(!ok) toast(N?'Could not open that app on this phone.':'This button works when Nostea runs as an Android app.'); }
+
+/* clock + network */
+function tick(){
+  var d=new Date(), h=d.getHours(), m=d.getMinutes(), suf='';
+  if(!settings.h24){ suf=h>=12?' PM':' AM'; h=h%12||12; }
+  var hs=settings.h24?pad(h):String(h);
+  $('#lH').textContent=hs; $('#lM').textContent=pad(m);
+  $('#hClock').textContent=hs+':'+pad(m)+suf; $('#cClock').textContent=hs+':'+pad(m)+suf;
+  $('#lDay').textContent=d.toLocaleDateString(undefined,{weekday:'long'});
+  $('#lDate').textContent=d.toLocaleDateString(undefined,{day:'numeric',month:'short'});
+  $('#hDate').textContent=d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+}
+function net(){ var on=navigator.onLine!==false; $$('[data-net]').forEach(function(e){e.textContent=on?'Online':'Offline'}); }
+window.addEventListener('online',net); window.addEventListener('offline',net);
+
+/* lock / unlock */
+var lock=$('#lock'), home=$('#home'), y0=null;
+function setLocked(v){ lock.classList.toggle('gone',!v); lock.style.transform=''; home.inert=v; lock.inert=!v; if(v) closeApp(); }
+function unlock(){ setLocked(false); }
+lock.addEventListener('pointerdown',function(e){ if(e.target.closest('button'))return; y0=e.clientY; try{lock.setPointerCapture(e.pointerId)}catch(x){} lock.style.transition='none'; });
+lock.addEventListener('pointermove',function(e){ if(y0===null)return; lock.style.transform='translateY('+Math.min(0,e.clientY-y0)+'px)'; });
+function endDrag(e){ if(y0===null)return; var dy=e.clientY-y0; y0=null; lock.style.transition=''; if(dy<-90) unlock(); else lock.style.transform=''; }
+lock.addEventListener('pointerup',endDrag); lock.addEventListener('pointercancel',endDrag);
+
+/* panels */
+var current=null;
+function openApp(name){
+  closeApp(true);
+  var p=$('#p-'+name); if(!p) return; current=name;
+  if(name==='drawer') buildDrawer(); if(name==='notes') showNoteList(); if(name==='settings') applyTheme();
+  p.classList.add('on');
+}
+function closeApp(quiet){ $$('.panel.on').forEach(function(p){p.classList.remove('on')}); current=null; }
+window.nosteaBack=function(){ if(current==='notes' && !$('#noteEdit').hidden){showNoteList();return true} if(current){closeApp();return true} return true; };
+window.nosteaHome=function(){ closeApp(); };
+
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-do]'); if(!b) return; var a=b.dataset.do;
+  if(a==='unlock') unlock(); else if(a==='app') openApp(b.dataset.app); else if(a==='close') closeApp();
+  else if(a==='url') openUrl(b.dataset.url); else if(a==='native') native(b.dataset.kind);
+  else if(a==='lockNow'){ setLocked(true); }
+});
+$('#searchForm').addEventListener('submit',function(e){ e.preventDefault(); openUrl(norm($('#q').value)); $('#q').blur(); });
+
+/* drawer */
+var BUILT=[['Notes','note','notes'],['Calc','calc','calc'],['Clock','clock','clock'],['Settings','gear','settings']];
+function tileHtml(label,icon,attrs){ return '<button class="tile" '+attrs+' aria-label="'+label+'"><svg class="ic"><use href="#i-'+icon+'"/></svg>'+label+'</button>'; }
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function buildDrawer(){
+  var h=tileHtml('YouTube','play','data-do="url" data-url="https://m.youtube.com/"')+tileHtml('Browser','globe','data-do="url" data-url="https://duckduckgo.com/"');
+  BUILT.forEach(function(x){h+=tileHtml(x[0],x[1],'data-do="app" data-app="'+x[2]+'"')});
+  $('#builtin').innerHTML=h;
+  var box=$('#installed'); box.innerHTML=''; $('#instSub').hidden=true;
+  if(N){ try{ var apps=JSON.parse(N.getApps()); if(apps.length){ $('#instSub').hidden=false;
+      box.innerHTML=apps.map(function(a){return '<button class="tile" data-pkg="'+esc(a.pkg)+'" aria-label="'+esc(a.label)+'"><svg class="ic"><use href="#i-grid"/></svg><span style="max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">'+esc(a.label)+'</span></button>'}).join(''); } }catch(e){} }
+}
+$('#installed').addEventListener('click',function(e){ var b=e.target.closest('[data-pkg]'); if(b&&N){ try{N.launchApp(b.dataset.pkg)}catch(x){} } });
+
+/* notes */
+var notes=[]; try{notes=JSON.parse(localStorage.getItem('nostea.notes')||'[]')}catch(e){}
+var noteId=null, delArmed=false;
+function saveNotes(){ try{localStorage.setItem('nostea.notes',JSON.stringify(notes))}catch(e){} }
+function showNoteList(){
+  noteId=null; $('#noteEdit').hidden=true; var L=$('#noteList'); L.hidden=false; $('#newNote').hidden=false;
+  if(!notes.length){ L.innerHTML='<div class="chip"><b>No notes yet</b><small>Tap New to write your first one.</small></div>'; return; }
+  L.innerHTML=notes.slice().sort(function(a,b){return b.t-a.t}).map(function(n){
+    var first=(n.text||'').split('\n')[0]||'Empty note';
+    return '<button class="chip" data-note="'+n.id+'"><b>'+esc(first.slice(0,60))+'</b><small>'+new Date(n.t).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</small></button>'; }).join('');
+}
+function editNote(id){ var n=notes.filter(function(x){return x.id===id})[0]; if(!n) return; noteId=id; delArmed=false; $('#noteDel').textContent='Delete';
+  $('#noteList').hidden=true; $('#newNote').hidden=true; $('#noteEdit').hidden=false; $('#noteText').value=n.text; $('#noteText').focus(); }
+$('#noteList').addEventListener('click',function(e){ var b=e.target.closest('[data-note]'); if(b) editNote(b.dataset.note); });
+$('#newNote').addEventListener('click',function(){ var n={id:'n'+Date.now(),text:'',t:Date.now()}; notes.push(n); saveNotes(); editNote(n.id); });
+$('#noteText').addEventListener('input',function(){ var n=notes.filter(function(x){return x.id===noteId})[0]; if(n){n.text=this.value;n.t=Date.now();saveNotes();} });
+$('#noteBack').addEventListener('click',function(){ var n=notes.filter(function(x){return x.id===noteId})[0]; if(n&&!n.text.trim()){notes=notes.filter(function(x){return x!==n});saveNotes();} showNoteList(); });
+$('#noteDel').addEventListener('click',function(){ if(!delArmed){delArmed=true;this.textContent='Tap again to delete';return;} notes=notes.filter(function(x){return x.id!==noteId}); saveNotes(); showNoteList(); });
+
+/* calculator */
+var disp='0', acc=null, op=null, fresh=true;
+function fmt(x){ if(!isFinite(x)) return 'Error'; return String(Number(x.toPrecision(12))); }
+function calc(a,b,o){ if(o==='+')return a+b; if(o==='−')return a-b; if(o==='×')return a*b; return b===0?NaN:a/b; }
+function press(k){
+  if(disp==='Error' && k!=='C'){ return; }
+  if(/^[0-9]$/.test(k)){ disp=(fresh||disp==='0')?k:disp+k; fresh=false; }
+  else if(k==='.'){ if(fresh){disp='0.';fresh=false} else if(disp.indexOf('.')<0) disp+='.'; }
+  else if(k==='C'){ disp='0';acc=null;op=null;fresh=true; }
+  else if(k==='±'){ disp=fmt(-parseFloat(disp)); }
+  else if(k==='%'){ disp=fmt(parseFloat(disp)/100); }
+  else if(k==='='){ if(op!==null){ disp=fmt(calc(acc,parseFloat(disp),op)); op=null; fresh=true; } }
+  else { if(op!==null&&!fresh){ disp=fmt(calc(acc,parseFloat(disp),op)); if(disp==='Error'){op=null;acc=null;$('#cd').textContent=disp;return;} }
+         acc=parseFloat(disp); op=k; fresh=true; }
+  $('#cd').textContent=disp;
+}
+$('#keys').addEventListener('click',function(e){ var b=e.target.closest('[data-k]'); if(b) press(b.dataset.k); });
+
+/* stopwatch + timer */
+var sw={on:false,t0:0,el:0,id:null};
+function swShow(){ var ms=sw.el+(sw.on?Date.now()-sw.t0:0), s=Math.floor(ms/1000); $('#swOut').textContent=pad(Math.floor(s/60))+':'+pad(s%60)+'.'+Math.floor((ms%1000)/100); }
+$('#swGo').addEventListener('click',function(){ if(sw.on){sw.el+=Date.now()-sw.t0;sw.on=false;clearInterval(sw.id);this.textContent='Start';} else {sw.t0=Date.now();sw.on=true;sw.id=setInterval(swShow,100);this.textContent='Stop';} swShow(); });
+$('#swReset').addEventListener('click',function(){ sw.on=false;sw.el=0;clearInterval(sw.id);$('#swGo').textContent='Start';swShow(); });
+var tm={min:5,on:false,end:0,id:null};
+function tmShow(){ var s=tm.on?Math.max(0,Math.ceil((tm.end-Date.now())/1000)):tm.min*60; $('#tmOut').textContent=pad(Math.floor(s/60))+':'+pad(s%60); return s; }
+function beep(){ try{ var C=window.AudioContext||window.webkitAudioContext,c=new C(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();setTimeout(function(){o.stop();c.close()},700);}catch(e){} try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){} }
+$('#tmMinus').addEventListener('click',function(){ if(!tm.on){tm.min=Math.max(1,tm.min-1);tmShow();} });
+$('#tmPlus').addEventListener('click',function(){ if(!tm.on){tm.min=Math.min(180,tm.min+1);tmShow();} });
+$('#tmGo').addEventListener('click',function(){ if(tm.on){tm.on=false;clearInterval(tm.id);this.textContent='Start';tmShow();return;}
+  tm.on=true;tm.end=Date.now()+tm.min*60000;this.textContent='Cancel';
+  tm.id=setInterval(function(){ if(tmShow()===0){ tm.on=false;clearInterval(tm.id);$('#tmGo').textContent='Start';beep();toast('Timer finished');tmShow(); } },250); tmShow(); });
+
+/* settings */
+$('#segTheme').addEventListener('click',function(e){ var b=e.target.closest('[data-theme-set]'); if(b){settings.theme=b.dataset.themeSet;saveSettings();applyTheme();} });
+$('#segAcc').addEventListener('click',function(e){ var b=e.target.closest('[data-acc]'); if(b){settings.accent=b.dataset.acc;saveSettings();applyTheme();} });
+$('#segFmt').addEventListener('click',function(e){ var b=e.target.closest('[data-fmt]'); if(b){settings.h24=b.dataset.fmt==='24';saveSettings();applyTheme();tick();} });
+
+applyTheme(); tick(); net(); swShow(); tmShow(); setInterval(tick,1000); setLocked(true);
+})();
+</script>
+</body>
+</html>
